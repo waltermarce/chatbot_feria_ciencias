@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chatbot Feria - IPET 404</title>
+<style>
+  :root{
+    --bg:#f3f7fb; --card:#ffffff; --accent:#0066cc; --muted:#6b7280;
+  }
+  body{font-family:Inter,system-ui,Segoe UI,Arial;margin:0;background:linear-gradient(180deg,#e9f0fb 0%,var(--bg) 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .app{width:100%;max-width:980px;background:var(--card);box-shadow:0 10px 30px rgba(2,6,23,0.08);border-radius:14px;overflow:hidden;display:grid;grid-template-columns:1fr 380px;min-height:620px;}
+  @media (max-width:920px){.app{grid-template-columns:1fr;}}
+  .left{padding:22px;display:flex;flex-direction:column;gap:12px}
+  .header{display:flex;align-items:center;gap:12px}
+  .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00a3ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:22px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:0;color:var(--muted)}
+  #chat{flex:1;overflow:auto;padding:8px;border-radius:10px;background:linear-gradient(180deg,#f8fbff,white);box-shadow:inset 0 1px 0 rgba(0,0,0,0.03)}
+  .msg{margin:8px 0;display:flex;gap:10px;align-items:flex-end}
+  .msg.bot{justify-content:flex-start}
+  .bubble{max-width:78%;padding:10px 12px;border-radius:12px;line-height:1.3}
+  .bubble.bot{background:#eef6ff;border:1px solid rgba(0,102,204,0.06)}
+  .bubble.user{background:linear-gradient(90deg,#0066cc,#00a3ff);color:white;border:0}
+  .meta{font-size:11px;color:var(--muted);margin-top:6px}
+  .suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-size:13px;color:#023047;cursor:pointer;border:1px solid rgba(0,0,0,0.03)}
+  .right{background:linear-gradient(180deg,#f7fbff,#ffffff);padding:18px;border-left:1px solid #eef3fb;display:flex;flex-direction:column;gap:12px}
+  .panel{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(2,6,23,0.03)}
+  .project{display:flex;gap:10px;align-items:flex-start}
+  .project img{width:72px;height:72px;border-radius:8px;object-fit:cover}
+  .btn{background:var(--accent);color:white;padding:10px 12px;border-radius:10px;border:0;cursor:pointer}
+  .row{display:flex;gap:8px}
+  .inputbar{display:flex;gap:8px;align-items:center}
+  input#entrada{flex:1;padding:10px;border-radius:10px;border:1px solid #e6eef9}
+  .controls{display:flex;gap:8px;align-items:center}
+  .mic{background:#ffe; border:1px solid #ffd9a8;padding:8px;border-radius:10px}
+  .typing{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ffd166,#ff7b7b);color:white;font-weight:700}
+  footer.note{padding:12px;text-align:center;color:var(--muted);font-size:13px}
+  .cardmedia{border-radius:10px;overflow:hidden;border:1px solid #eef7ff}
+  .small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app" role="application" aria-label="Chatbot Feria IPET404">
+  <div class="left">
+    <div class="header">
+      <div class="logo">IPET</div>
+      <div>
+        <h1>ChatBot Feria • IPET 404</h1>
+        <p class="lead">Preguntá por proyectos, horarios, jurado o dejá tu opinión. Hablá o escribí — yo respondo.</p>
+      </div>
+    </div>
+
+    <div id="chat" aria-live="polite"></div>
+
+    <div class="inputbar">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="micBtn" class="mic" title="Hablar / Detener">🎤</button>
+      </div>
+      <input id="entrada" placeholder="Escribí tu pregunta (ej: ¿qué proyectos tienen sobre energía?)" aria-label="entrada de mensaje">
+      <button id="sendBtn" class="btn">Enviar</button>
+    </div>
+
+    <div class="suggestions" id="suggestions"></div>
+
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+      <button id="downloadFeedback" class="btn" style="background:#0b6b58">Descargar feedback</button>
+      <button id="kioskMode" class="btn" style="background:#8b5cf6">Modo Kiosco</button>
+    </div>
+    <footer class="note">Prototipo para feria • Presentado por 5° año Informática</footer>
+  </div>
+
+  <aside class="right">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Proyectos destacados</strong><div class="small">Tocá para ver ficha</div></div>
+        <div class="small">Horario: 10:00 - 17:00</div>
+      </div>
+      <hr style="opacity:.08">
+      <div id="projectsList"></div>
+    </div>
+
+    <div class="panel">
+      <strong>Resumen rápido</strong>
+      <div class="small">Usá la voz o escribí. El bot puede mostrar videos, fotos y tomar encuestas rápidas.</div>
+      <div style="margin-top:8px" class="small">Ejemplos: "¿Qué proyecto habla de energía solar?", "Contame quién es el jurado", "Quiero agendar presentación".</div>
+    </div>
+
+    <div class="panel">
+      <strong>Encuesta rápida</strong>
+      <div class="small">Ayudanos con 2 preguntas</div>
+      <div style="margin-top:8px">
+        <label class="small">¿Te gustó la feria?</label>
+        <div class="row"><button class="chip" onclick="recordQuick('gustó','Sí')">Sí</button><button class="chip" onclick="recordQuick('gustó','Más o menos')">Más o menos</button><button class="chip" onclick="recordQuick('gustó','No')">No</button></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* -------------------------
+   Datos de ejemplo: proyectos
+   Los alumnos pueden editar este array para agregar sus proyectos.
+   ------------------------- */
+const PROYECTOS = [
+  { id:1, title:"Generador Eólico Escolar", team:"5A - Energía", desc:"Turbina con materiales reciclados que genera 12W.", img:"https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=800&auto=format&fit=crop&crop=faces", video:"https://www.youtube.com/embed/4UZrsTqkcW4" },
+  { id:2, title:"Huerta Automática IoT", team:"5B - Agricultura", desc:"Sistema que riega según humedad con sensor y app.", img:"https://images.unsplash.com/photo-1542736667-069246bdbc73?q=80&w=800&auto=format&fit=crop&crop=faces", video:"https://www.youtube.com/embed/2Vv-BfVoq4g" },
+  { id:3, title:"Carrito de Compras con SQLite", team:"5C - BD", desc:"E-commerce escolar con base local y carrito conectado.", img:"https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=800&auto=format&fit=crop&crop=faces", video:"https://www.youtube.com/embed/dQw4w9WgXcQ" }
+];
+
+/* -------------------------
+   Estado: mensajes y feedback
+   ------------------------- */
+let MESSAGES = [];
+let FEEDBACK = [];
+
+/* -------------------------
+   Utilidades UI
+   ------------------------- */
+const chat = document.getElementById('chat');
+const entrada = document.getElementById('entrada');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const suggestions = document.getElementById('suggestions');
+const projectsList = document.getElementById('projectsList');
+const downloadFeedback = document.getElementById('downloadFeedback');
+const kioskMode = document.getElementById('kioskMode');
+
+function addMessage(who, text, meta='') {
+  const m = document.createElement('div');
+  m.className = 'msg ' + (who==='Bot' ? 'bot' : 'user');
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = who==='Bot' ? 'B' : 'T';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + (who==='Bot' ? 'bot' : 'user');
+  bubble.innerHTML = text;
+  m.appendChild(who==='Bot'?avatar:document.createElement('div'));
+  m.appendChild(bubble);
+  chat.appendChild(m);
+  chat.scrollTop = chat.scrollHeight;
+  MESSAGES.push({who,text,meta,time:new Date().toISOString()});
+}
+
+function showTyping(){
+  const t = document.createElement('div'); t.className='msg bot'; t.id='ttyping';
+  t.innerHTML = `<div class="bubble bot"> <span class="typing">⏳ El bot está pensando...</span></div>`;
+  chat.appendChild(t); chat.scrollTop = chat.scrollHeight;
+}
+function hideTyping(){const t=document.getElementById('ttyping'); if(t) t.remove();}
+
+/* -------------------------
+   Inicialización de UI
+   ------------------------- */
+
+function renderProjects(){
+  projectsList.innerHTML='';
+  PROYECTOS.forEach(p=>{
+    const el = document.createElement('div'); el.className='project';
+    el.innerHTML = `<img src="${p.img}" alt="${p.title}"><div style="flex:1">
+      <strong>${p.title}</strong>
+      <div class="small">${p.team}</div>
+      <div class="small" style="margin-top:6px">${p.desc}</div>
+      <div style="margin-top:8px"><button class="chip" onclick="showProject(${p.id})">Ver ficha</button></div>
+    </div>`;
+    projectsList.appendChild(el);
+  });
+}
+renderProjects();
+
+/* -------------------------
+   Mostrar ficha del proyecto
+   ------------------------- */
+function showProject(id){
+  const p = PROYECTOS.find(x=>x.id===id);
+  if(!p) return;
+  const html = `
+    <div class="cardmedia">
+      <img src="${p.img}" style="width:100%;height:180px;object-fit:cover">
+      <div style="padding:10px">
+        <h3 style="margin:0">${p.title}</h3>
+        <div class="small">${p.team}</div>
+        <p style="margin:8px 0">${p.desc}</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" onclick="playVideo('${p.video}')">Ver video</button>
+          <button class="chip" onclick="ask('Contame sobre el proyecto ${p.title}')">Preguntar al bot</button>
+        </div>
+      </div>
+    </div>
+  `;
+  addMessage('Bot', html);
+  speakText(`${p.title}. ${p.desc}`);
+}
+
+/* -------------------------
+   Video modal simple (incrusta en chat)
+   ------------------------- */
+function playVideo(url){
+  const id = url.split('/').pop();
+  const embed = `<div style="padding:8px"><iframe width="100%" height="315" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe></div>`;
+  addMessage('Bot', embed);
+}
+
+/* -------------------------
+   Motor de respuestas simple + reglas y knowledge base
+   ------------------------- */
+const KNOW = {
+  saludo: ['hola','buenas','buen dia','buenas tardes','buenas noches','hi'],
+  horario: ['horario','horarios','cuando abre','cuando cierra'],
+  jurado: ['jurado','quien evalua','evaluadores'],
+  proyectos: ['proyecto','proyectos','qué proyectos','que proyectos'],
+  contacto: ['contacto','telefono','correo'],
+  agradecer: ['gracias','muchas gracias','gracias!']
+};
+
+function findIntent(text){
+  const t = text.toLowerCase();
+  for(const k in KNOW){
+    for(const frag of KNOW[k]) if(t.includes(frag)) return k;
+  }
+  return null;
+}
+
+function botResponse(text){
+  const intent = findIntent(text) ;
+  if(intent==='saludo') return "¡Hola! Soy el asistente de la feria. Podés pedirme: ver proyectos, horarios, jurado, ver videos o dejar feedback. También probá a hablar con el micrófono.";
+  if(intent==='horario') return "La feria está abierta de 10:00 a 17:00. Las presentaciones del jurado serán de 13:00 a 15:00.";
+  if(intent==='jurado') return "El jurado está conformado por: Prof. Gómez (Coordinador), Ing. Ruiz (Tecnología), Dra. Pérez (Ciencias).";
+  if(intent==='proyectos') {
+    const list = PROYECTOS.map(p=>`• ${p.title} (${p.team})`).join('\n');
+    return `Tenemos estos proyectos destacados:\n${list}\nTocá cualquier ficha en la columna derecha para ver más.`;
+  }
+  if(intent==='contacto') return "Contacto de la escuela: 351-XXXXX. Correo: ipet404@ejemplo.edu.ar";
+  if(intent==='agradecer') return "¡Gracias a vos por visitarnos! Dejanos tu opinión en la encuesta a la derecha.";
+  // fallback (búsqueda por título)
+  const matched = PROYECTOS.find(p => text.toLowerCase().includes(p.title.toLowerCase()) || text.toLowerCase().includes(p.team.toLowerCase()));
+  if(matched) return `${matched.title}: ${matched.desc}. Si querés ver el video tocá 'Ver ficha' o pedime que lo muestre.`;
+  // small talk fallback
+  if(text.length<3) return "Perdón, no entendí — escribí algo más o tocá una sugerencia.";
+  return "¡Buena pregunta! No lo tengo anotado. Si querés, dejá tu consulta y lo pasa el grupo creador o elegí una ficha de proyecto para más info.";
+}
+
+/* -------------------------
+   Envío/recepción de mensajes
+   ------------------------- */
+function ask(text){
+  if(!text) return;
+  addMessage('Tú', text);
+  entrada.value = '';
+  showTyping();
+  setTimeout(()=> {
+    hideTyping();
+    const respuesta = botResponse(text);
+    addMessage('Bot', respuesta);
+    // sugerencias rápidas
+    renderSuggestions();
+    speakText(respuesta);
+  }, 700 + Math.random()*800);
+}
+
+sendBtn.addEventListener('click', ()=> ask(entrada.value));
+entrada.addEventListener('keydown', (e)=> { if(e.key==='Enter') ask(entrada.value); });
+
+/* -------------------------
+   Sugerencias dinámicas
+   ------------------------- */
+function renderSuggestions(){
+  suggestions.innerHTML='';
+  const chips = ['Hola','¿Qué proyectos hay?','Horario','Jurado','Ver proyecto Huerta','Dejar feedback'];
+  chips.forEach(c=>{
+    const b = document.createElement('button'); b.className='chip'; b.textContent=c;
+    b.onclick = ()=> {
+      if(c.startsWith('Ver proyecto')) {
+        const name = c.split('Ver proyecto ')[1];
+        const p = PROYECTOS.find(x => x.title.includes(name) || x.team.includes(name));
+        if(p) showProject(p.id);
+      } else if(c==='Dejar feedback') showFeedbackForm();
+      else ask(c);
+    };
+    suggestions.appendChild(b);
+  });
+}
+renderSuggestions();
+
+/* -------------------------
+   Feedback / encuesta y descarga CSV
+   ------------------------- */
+function showFeedbackForm(){
+  const form = `
+    <div style="padding:8px;border-radius:8px;background:#fff">
+      <strong>Dejanos tu opinión</strong>
+      <div class="small">Nombre (opcional)</div>
+      <input id="fb_name" style="width:100%;padding:8px;margin:6px 0;border-radius:8px;border:1px solid #eee">
+      <div class="small">Comentario</div>
+      <textarea id="fb_text" style="width:100%;padding:8px;margin:6px 0;border-radius:8px;border:1px solid #eee"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" onclick="addFeedback()">Enviar</button></div>
+    </div>
+  `;
+  addMessage('Bot', form);
+}
+function addFeedback(){
+  const name = document.getElementById('fb_name').value || 'Anon';
+  const text = document.getElementById('fb_text').value || '';
+  if(!text){ alert('Escribí algo, por favor'); return; }
+  FEEDBACK.push({name,text,time:new Date().toISOString()});
+  addMessage('Bot', `<div class="small">¡Gracias por tu aporte, ${name}! 😊</div>`);
+}
+
+/* quick survey recorder */
+function recordQuick(k,v){
+  FEEDBACK.push({name:'Anon', quick:`${k}:${v}`, time:new Date().toISOString()});
+  addMessage('Bot', `<div class="small">¡Gracias! Registramos: ${k} = ${v}</div>`);
+}
+
+/* download CSV */
+downloadFeedback.addEventListener('click', ()=>{
+  if(FEEDBACK.length===0){ alert('No hay feedback aun'); return;}
+  const csvRows = ['Nombre,Comentario,Hora'];
+  FEEDBACK.forEach(f=> csvRows.push(`"${(f.name||'Anon').replace(/"/g,'""')}","${(f.text||f.quick||'').replace(/"/g,'""')}","${f.time}"`));
+  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='feedback_feria.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* -------------------------
+   Voz: síntesis y reconocimiento (Web Speech API)
+   ------------------------- */
+let recognizing = false;
+const synth = window.speechSynthesis;
+
+function speakText(text){
+  if(!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'es-AR';
+  utter.rate = 1;
+  synth.cancel();
+  synth.speak(utter);
+}
+
+// reconocimiento
+let recognition = null;
+if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new R();
+  recognition.lang = 'es-AR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.onresult = (e)=> {
+    const t = e.results[0][0].transcript;
+    ask(t);
+    micBtn.textContent='🎤';
+    recognizing=false;
+  };
+  recognition.onend = ()=> { recognizing=false; micBtn.textContent='🎤'; };
+  recognition.onerror = (e)=> { console.log('rec error', e); recognizing=false; micBtn.textContent='🎤'; };
+}
+
+micBtn.addEventListener('click', ()=>{
+  if(!recognition){ alert('Tu navegador no soporta reconocimiento por voz. Usá Chrome en PC o Android.'); return; }
+  if(!recognizing){ recognition.start(); recognizing=true; micBtn.textContent='■'; }
+  else{ recognition.stop(); recognizing=false; micBtn.textContent='🎤'; }
+});
+
+/* -------------------------
+   Kiosco: pantalla grande / modo presentación
+   ------------------------- */
+let kiosk = false;
+kioskMode.addEventListener('click', ()=>{
+  kiosk = !kiosk;
+  if(kiosk){
+    document.querySelector('.app').style.maxWidth='1400px';
+    kioskMode.textContent='Salir Kiosco';
+    document.body.requestFullscreen?.();
+  } else {
+    kioskMode.textContent='Modo Kiosco';
+    document.exitFullscreen?.();
+  }
+});
+
+/* -------------------------
+   Init welcome
+   ------------------------- */
+addMessage('Bot', `<div><strong>Bienvenid@ a la Feria IPET 404</strong><div class="small">Preguntá por proyectos, mirá videos, dejá tu opinión y sorprendete!</div></div>`);
+speakText('Bienvenidos a la feria. Pregunten por los proyectos o toquen una ficha del panel derecho.');
+</script>
+</body>
+</html>
